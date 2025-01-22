@@ -1,4 +1,4 @@
-module github.com/kanthorlabs/runit
+module github.com/kanthorlabs/runit/cmd
 
 go 1.23.3
 
