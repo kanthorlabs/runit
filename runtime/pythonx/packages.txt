@@ -205,7 +205,6 @@ profile
 pstats
 pydoc_data
 pyexpat
-requests
 setuptools
 smtpd
 sndhdr

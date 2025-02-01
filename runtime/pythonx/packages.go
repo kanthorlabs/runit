@@ -1,4 +1,4 @@
-package python
+package pythonx
 
 import (
 	"bufio"
@@ -18,10 +18,9 @@ func init() {
 	PackageSystem = strings.Split(packages, "\n")
 }
 
-func ParseImports(codes []byte, excludes []string) []string {
+func Scan(scanner *bufio.Scanner, excludes []string) (map[string]int, error) {
 	maps := make(map[string]int)
 
-	scanner := bufio.NewScanner(bytes.NewReader(codes))
 	for scanner.Scan() {
 		line := scanner.Text()
 		if matches := PackageRegex.FindStringSubmatch(line); matches != nil {
@@ -39,10 +38,19 @@ func ParseImports(codes []byte, excludes []string) []string {
 		}
 	}
 
-	var imports []string
-	for pkg := range maps {
-		imports = append(imports, pkg)
+	if err := scanner.Err(); err != nil {
+		return nil, err
 	}
 
-	return imports
+	return maps, nil
+}
+
+func Lockfile(maps map[string]int) *bytes.Buffer {
+	buff := new(bytes.Buffer)
+
+	for pkg := range maps {
+		buff.WriteString(pkg + "\n")
+	}
+
+	return buff
 }

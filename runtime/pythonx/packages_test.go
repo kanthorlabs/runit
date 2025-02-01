@@ -1,11 +1,15 @@
-package python
+package pythonx
 
 import (
+	"bufio"
 	"slices"
+	"strings"
 	"testing"
+
+	"github.com/samber/lo"
 )
 
-func TestParseImports(t *testing.T) {
+func TestScan(t *testing.T) {
 	packages := map[string][]string{
 		"os":      {"", "os"},
 		"os.path": {"", ""},
@@ -28,7 +32,12 @@ func TestParseImports(t *testing.T) {
 	}
 	codes += "# some comment\n"
 
-	actual := ParseImports([]byte(codes), nil)
+	scanner := bufio.NewScanner(strings.NewReader(codes))
+	maps, err := Scan(scanner, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual := lo.Keys(maps)
 
 	slices.Sort(expected)
 	slices.Sort(actual)
@@ -37,7 +46,7 @@ func TestParseImports(t *testing.T) {
 	}
 }
 
-func TestParseImports_ExternalOnly(t *testing.T) {
+func TestScan_ExternalOnly(t *testing.T) {
 	packages := map[string][]string{
 		"os":      {"", "os"},
 		"os.path": {"", ""},
@@ -56,7 +65,12 @@ func TestParseImports_ExternalOnly(t *testing.T) {
 	}
 	codes += "# some comment\n"
 
-	actual := ParseImports([]byte(codes), PackageSystem)
+	scanner := bufio.NewScanner(strings.NewReader(codes))
+	maps, err := Scan(scanner, PackageSystem)
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual := lo.Keys(maps)
 
 	slices.Sort(expected)
 	slices.Sort(actual)
