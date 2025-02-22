@@ -9,15 +9,19 @@ import (
 //go:embed template.tpl
 var tplcontent string
 var tpl = template.Must(template.New("Dockerfile").Parse(tplcontent))
+var DefaultPythonVersion = "python:3.13-slim"
 
 type DockerfileVars struct {
 	Version string
 	Ports   []string
+	// Add any future container configuration here
 }
 
-var DefaultVars = &DockerfileVars{
-	Version: "python:3.13-slim",
-	Ports:   []string{"8080"},
+func NewDockerfileVars() *DockerfileVars {
+	return &DockerfileVars{
+		Version: DefaultPythonVersion,
+		Ports:   []string{},
+	}
 }
 
 func Dockerfile(vars *DockerfileVars) (*bytes.Buffer, error) {

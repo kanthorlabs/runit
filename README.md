@@ -35,12 +35,60 @@ To install runit, you need to have Go (Golang) installed on your system. Follow 
 Now you are ready to use runit to execute your Python scripts!
 
 ## Usage
-To use runit, you can run the following command:
+runit provides a simple command-line interface to run Python scripts. Here's the basic syntax:
+
 ```bash
-runit <path-to-your-python-script>
+runit [options] <path-to-your-python-script>
 ```
 
-runit will build a Docker image, run the script, and then remove the container.
+### Command Options
+
+| Option             | Description                                    | Default            | Example                               |
+|--------------------|------------------------------------------------|--------------------|---------------------------------------|
+| `--platform-version` | Specify the Python Docker image version      | `python:3.13-slim` | `--platform-version python:3.11-slim`   |
+| `--ports`          | Expose ports (can be specified multiple times) |                    | `--ports 3000 --ports 8000`           |
+
+### Examples
+
+1. Run a script with default settings:
+```bash
+runit script.py
+```
+
+2. Run with a specific Python version:
+```bash
+runit --platform-version python:3.11-slim script.py
+```
+
+3. Expose specific ports:
+```bash
+runit --ports 3000 script.py
+```
+
+4. Multiple port exposure:
+```bash
+runit --ports 3000 --ports 8000 script.py
+```
+
+5. Combine multiple options:
+```bash
+runit --platform-version python:3.11-slim --ports 3000 --ports 8000 script.py
+```
+
+### Docker Images
+runit uses official Python Docker images. You can specify any valid Python image tag from Docker Hub. Some common options:
+
+- `python:3.13-slim` (default)
+- `python:3.11-slim`
+- `python:3.12-slim`
+- `python:3.11-alpine`
+- `python:3.12-alpine`
+
+### Port Binding
+When you specify ports using the `--ports` flag, runit will:
+1. Expose these ports in the Docker container
+2. Map them to the same port numbers on your host machine
+3. Make them accessible via localhost/127.0.0.1
 
 ## Contributing
 Contributions to runit are welcome! If you have any ideas, suggestions, or bug reports, please feel free to open an issue or submit a pull request.
@@ -48,4 +96,3 @@ Contributions to runit are welcome! If you have any ideas, suggestions, or bug r
 ## License
 runit is open-sourced under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-    

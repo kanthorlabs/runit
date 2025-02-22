@@ -22,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func Exec(filepath string) error {
+func Exec(filepath string, vars *pythonx.DockerfileVars) error {
 	buf := new(bytes.Buffer)
 	tw := tar.NewWriter(buf)
 
@@ -40,7 +40,7 @@ func Exec(filepath string) error {
 		return errors.Wrap(err, "failed to build application")
 	}
 
-	if err := BuildDockerfile(tw, pythonx.DefaultVars); err != nil {
+	if err := BuildDockerfile(tw, vars); err != nil {
 		return errors.Wrap(err, "failed to build Dockerfile")
 	}
 
@@ -66,7 +66,7 @@ func Exec(filepath string) error {
 		return err
 	}
 
-	return RunContainer(cli, name, pythonx.DefaultVars)
+	return RunContainer(cli, name, vars)
 }
 
 func BuildLockfile(tw *tar.Writer, file *os.File) error {
@@ -231,7 +231,7 @@ func RunContainer(cli *client.Client, name string, vars *pythonx.DockerfileVars)
 		}
 	case waitresp := <-waitc:
 		if err := waitresp.Error; err != nil {
-			return fmt.Errorf("Exit Code: %d - %s", waitresp.StatusCode, err.Message)
+			return fmt.Errorf("exit code: %d - %s", waitresp.StatusCode, err.Message)
 		}
 	case <-ctx.Done():
 		return ctx.Err()
