@@ -1,114 +1,140 @@
-# runit
-> Run arbitrary python script you have, no setup, no configuration, just run it
+<div align="center">
 
-## Table of Contents
-- [Introduction](#introduction)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
+# 🚀 runit
 
-## Introduction
-runit is a simple tool that allows you to run arbitrary Python scripts without any setup or configuration. It is designed to be lightweight and easy to use, making it perfect for quick tasks and prototyping.
+Run Python scripts instantly in containers - no setup, no fuss, just run it.
 
-## Installation
-To install runit, you need to have Go (Golang) installed on your system. Follow these steps:
+[![Go Report Card](https://goreportcard.com/badge/github.com/kanthorlabs/runit)](https://goreportcard.com/report/github.com/kanthorlabs/runit)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/kanthorlabs/runit)](go.mod)
+[![Latest Release](https://img.shields.io/github/v/release/kanthorlabs/runit)](https://github.com/kanthorlabs/runit/releases)
 
-1. **Install Go**: If you haven't installed Go yet, you can download it from the official Go website: [https://golang.org/dl/](https://golang.org/dl/). Follow the installation instructions for your operating system.
+---
 
-2. **Set up your Go workspace**: Make sure your Go workspace is set up correctly. You can set the `GOPATH` environment variable to your desired workspace directory. For example, you can add the following lines to your `.bashrc` or `.zshrc` file:
-   ```bash
-   export GOPATH=$HOME/go
-   export PATH=$PATH:$GOPATH/bin
-   ```
+## ✨ Features
 
-3. **Install runit**: Open your terminal and run the following command to install runit:
-   ```bash
-   go install github.com/kanthorlabs/runit/cmd/runit@latest
-   ```
+- 🐍 **Zero Python Setup** - No local Python installation needed
+- 🔒 **Isolated Environment** - Each script runs in its own container
+- 📦 **Auto Dependencies** - Automatically detects and installs required packages
+- 🎯 **Simple Interface** - Single command to run any Python script
+- 🔌 **Port Forwarding** - Easy exposure of network services
+- 🎨 **Version Flexible** - Use any Python version you need
 
-4. **Verify the installation**: After the installation is complete, you can verify that runit is installed correctly by running:
-   ```bash
-   runit --version
-   ```
+## 🚀 Quick Start
 
-Now you are ready to use runit to execute your Python scripts!
+### Installation
 
-## Usage
-runit provides a simple command-line interface to run Python scripts. Here's the basic syntax:
+```bash
+go install github.com/kanthorlabs/runit/cmd/runit@latest
+```
+
+### Basic Usage
+
+```bash
+# Run a simple script
+runit script.py
+
+# Run with specific Python version
+runit --platform-version python:3.11-slim script.py
+
+# Expose ports
+runit --ports 8080 webapp.py
+
+# Pass arguments to your script
+runit github-analyzer.py --arguments="kanthorlabs/runit"
+```
+
+## 🎯 Command Reference
+
+### Syntax
 
 ```bash
 runit [flags] <script>
 ```
 
-### Command Options
+### Flags
 
-| Option               | Description                                    | Default            | Example                               |
-|----------------------|------------------------------------------------|--------------------|---------------------------------------|
-| `--platform-version` | Specify the Python Docker image version        | `python:3.13-slim` | `--platform-version python:3.11-slim` |
-| `--ports`            | Expose ports (can be specified multiple times) |                    | `--ports 3000 --ports 8000`           |
-| `--arguments`        | Main script arguments                          |                    | `--arguments="kanthorlabs/runit"`     |
-| `--params`           | Additional script parameters                   |                    | `--params="--token=xxx"`              |
+| Flag                  | Description                                    | Default            |
+|-----------------------|------------------------------------------------|--------------------|
+| `--platform-version`  | Python Docker image version                    | `python:3.13-slim` |
+| `--ports`             | Expose ports (repeatable)                      | -                  |
+| `--arguments`         | Script arguments                               | -                  |
+| `--params`            | Script parameters                              | -                  |
 
-### Examples
+### 🎭 Advanced Examples
 
-1. Run a script with default settings:
 ```bash
-runit script.py
-```
+# Web application with multiple ports
+runit webapp.py --ports 8080 --ports 9090
 
-2. Run with a specific Python version:
-```bash
-runit --platform-version python:3.11-slim script.py
-```
-
-3. Expose specific ports:
-```bash
-runit --ports 3000 script.py
-```
-
-4. Multiple port exposure:
-```bash
-runit --ports 3000 --ports 8000 script.py
-```
-
-5. Run script with arguments:
-```bash
-runit github-analyzer.py --arguments="kanthorlabs/runit"
-```
-
-6. Run script with arguments and parameters:
-```bash
-runit github-analyzer.py --arguments="kanthorlabs/runit" --params="--token=xxx"
-```
-
-7. Full example with all options:
-```bash
-runit github-analyzer.py \
-  --platform-version python:3.11-slim \
-  --ports 3000 \
+# GitHub analyzer with authentication
+runit examples/python/github-analyzer.py \
   --arguments="kanthorlabs/runit" \
   --params="--token=xxx"
+
+# Machine learning script with specific Python version
+runit ml-model.py \
+  --platform-version python:3.11-slim \
+  --arguments="--model=gpt2" \
+  --params="--batch-size=32"
 ```
 
-### Docker Images
-runit uses official Python Docker images. You can specify any valid Python image tag from Docker Hub. Some common options:
+## 🏗️ Architecture
 
-- `python:3.13-slim` (default)
-- `python:3.11-slim`
-- `python:3.12-slim`
-- `python:3.11-alpine`
-- `python:3.12-alpine`
+```mermaid
+flowchart TB;
+  client --> source
 
-### Port Binding
-When you specify ports using the `--ports` flag, runit will:
-1. Expose these ports in the Docker container
-2. Map them to the same port numbers on your host machine
-3. Make them accessible via localhost/127.0.0.1
+  source --> files;
+  files --> tarball_builder;
+  files --> dockerfile_builder;
 
-## Contributing
-Contributions to runit are welcome! If you have any ideas, suggestions, or bug reports, please feel free to open an issue or submit a pull request.
+  subgraph dockerfile_builder
+  direction TB
+  pkg_scanner --> pkg_lockfile_generator;
+  end
 
-## License
-runit is open-sourced under the MIT License - see the [LICENSE](LICENSE) file for details.
+  dockerfile_builder --> tarball_builder;
+
+  source --> directory;
+  directory --> tarball_builder;
+
+  tarball_builder --> docker_image;
+  docker_image --> docker_container;
+  docker_container --> output;
+  docker_container --> cleanup;
+```
+
+## 🧩 How It Works
+
+1. **Analysis**: Scans your Python script for dependencies
+2. **Packaging**: Creates a container with your script and dependencies
+3. **Execution**: Runs the script in an isolated environment
+4. **Cleanup**: Automatically removes the container after execution
+
+## 💡 Pro Tips
+
+- Use `python:*-slim` images for faster downloads
+- Leverage port forwarding for web applications
+- Include requirements.txt for explicit dependencies
+- Use environment variables for sensitive data
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how you can help:
+
+- 🐛 Report bugs
+- 💡 Suggest features
+- 🔧 Submit pull requests
+- 📖 Improve documentation
+
+## 📝 License
+
+MIT License - [View License](LICENSE)
+
+---
+
+<div align="center">
+Made with ❤️ by <a href="https://github.com/kanthorlabs">Kanthor Labs</a>
+</div>
 
