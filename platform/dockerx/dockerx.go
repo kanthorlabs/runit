@@ -57,7 +57,7 @@ func Exec(filepath string, vars *pythonx.DockerfileVars) error {
 		return err
 	}
 
-	name, err := BuildName(file)
+	name, err := BuildName(filepath, vars, file)
 	if err != nil {
 		return err
 	}
@@ -151,16 +151,35 @@ func BuildDockerfile(tw *tar.Writer, vars *pythonx.DockerfileVars) error {
 	return nil
 }
 
-func BuildName(file *os.File) (string, error) {
+func BuildName(filepath string, vars *pythonx.DockerfileVars, file *os.File) (string, error) {
 	// Reset the file pointer
 	if _, err := file.Seek(0, 0); err != nil {
 		return "", err
 	}
 
 	hash := sha256.New()
+
+	// Write filepath to hash
+	if _, err := hash.Write([]byte(filepath)); err != nil {
+		return "", err
+	}
+
+	// Write file content to hash
 	if _, err := io.Copy(hash, file); err != nil {
 		return "", err
 	}
+
+	// Write vars to hash
+	varsString := fmt.Sprintf("%s-%s-%s-%s",
+		vars.Version,
+		vars.Arguments,
+		vars.Params,
+		vars.Ports,
+	)
+	if _, err := hash.Write([]byte(varsString)); err != nil {
+		return "", err
+	}
+
 	sha256sum := fmt.Sprintf("%x", hash.Sum(nil))
 	name := fmt.Sprintf("%s-%s", time.Now().Format("20060102150405"), sha256sum[0:6])
 	return name, nil
@@ -191,8 +210,18 @@ func RunContainer(cli *client.Client, name string, vars *pythonx.DockerfileVars)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
 	defer cancel()
 
+	// Build command array
+	cmd := []string{"python", "main.py"}
+	if vars.Arguments != "" {
+		cmd = append(cmd, vars.Arguments)
+	}
+	if vars.Params != "" {
+		cmd = append(cmd, vars.Params)
+	}
+
 	conf := &container.Config{
 		Image: fmt.Sprintf("kanthorlab/runit-python:%s", name),
+		Cmd:   cmd,
 	}
 	hostconf := &container.HostConfig{
 		PortBindings: nat.PortMap{},

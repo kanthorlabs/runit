@@ -8,52 +8,66 @@ import (
 
 	"github.com/kanthorlabs/runit/platform/dockerx"
 	"github.com/kanthorlabs/runit/runtime/pythonx"
-	"github.com/urfave/cli/v2"
+	"github.com/spf13/cobra"
 )
 
 //go:embed .version
 var version string
 
 func main() {
-	app := &cli.App{
-		Name:    "runit",
-		Usage:   "Run arbitrary python script you have, no setup, no configuration, just run it",
+	cmd := &cobra.Command{
+		Use:     "runit [flags] <script>",
+		Short:   "Run arbitrary python script you have",
 		Version: version,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  "platform-version",
-				Value: pythonx.DefaultPythonVersion,
-				Usage: "Python version to use (e.g. python:3.13-slim)",
-			},
-			&cli.StringSliceFlag{
-				Name:  "ports",
-				Usage: "Ports to expose (can be specified multiple times)",
-			},
-		},
-		Action: func(c *cli.Context) error {
-			if c.NArg() != 1 {
-				return ErrScriptPathRequired
+		Args:    cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			scriptPath := args[0]
+			if scriptPath == "" {
+				return ErrScriptPathRequired()
 			}
 
-			scriptPath := c.Args().First()
 			absPath, err := filepath.Abs(scriptPath)
 			if err != nil {
-				return ErrInvalidScriptPath
+				return ErrInvalidScriptPath()
 			}
 			if _, err := os.Stat(absPath); err != nil {
-				return ErrScriptNotFound
+				return ErrScriptNotFound()
 			}
 
+			version, err := cmd.Flags().GetString("platform-version")
+			if err != nil {
+				return ErrArgsParams("platform-version")
+			}
+			ports, err := cmd.Flags().GetStringSlice("ports")
+			if err != nil {
+				return ErrArgsParams("ports")
+			}
+			arguments, err := cmd.Flags().GetString("arguments")
+			if err != nil {
+				return ErrArgsParams("arguments")
+			}
+			params, err := cmd.Flags().GetString("params")
+			if err != nil {
+				return ErrArgsParams("params")
+			}
 			vars := &pythonx.DockerfileVars{
-				Version: c.String("platform-version"),
-				Ports:   c.StringSlice("ports"),
+				Version:   version,
+				Ports:     ports,
+				Arguments: arguments,
+				Params:    params,
 			}
 
 			return dockerx.Exec(scriptPath, vars)
 		},
 	}
 
-	if err := app.Run(os.Args); err != nil {
+	// Add flags
+	cmd.Flags().String("platform-version", pythonx.DefaultPythonVersion, "Python version to use (e.g. python:3.13-slim)")
+	cmd.Flags().StringSlice("ports", []string{}, "Ports to expose (can be specified multiple times)")
+	cmd.Flags().String("arguments", "", "Main script arguments (e.g. --arguments=\"kanthorlabs/runit\")")
+	cmd.Flags().String("params", "", "Additional script parameters (e.g. --params=\"--token=xxx\")")
+
+	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
 }

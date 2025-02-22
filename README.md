@@ -38,15 +38,17 @@ Now you are ready to use runit to execute your Python scripts!
 runit provides a simple command-line interface to run Python scripts. Here's the basic syntax:
 
 ```bash
-runit [options] <path-to-your-python-script>
+runit [flags] <script>
 ```
 
 ### Command Options
 
-| Option             | Description                                    | Default            | Example                               |
-|--------------------|------------------------------------------------|--------------------|---------------------------------------|
-| `--platform-version` | Specify the Python Docker image version      | `python:3.13-slim` | `--platform-version python:3.11-slim`   |
-| `--ports`          | Expose ports (can be specified multiple times) |                    | `--ports 3000 --ports 8000`           |
+| Option               | Description                                    | Default            | Example                               |
+|----------------------|------------------------------------------------|--------------------|---------------------------------------|
+| `--platform-version` | Specify the Python Docker image version        | `python:3.13-slim` | `--platform-version python:3.11-slim` |
+| `--ports`            | Expose ports (can be specified multiple times) |                    | `--ports 3000 --ports 8000`           |
+| `--arguments`        | Main script arguments                          |                    | `--arguments="kanthorlabs/runit"`     |
+| `--params`           | Additional script parameters                   |                    | `--params="--token=xxx"`              |
 
 ### Examples
 
@@ -70,9 +72,23 @@ runit --ports 3000 script.py
 runit --ports 3000 --ports 8000 script.py
 ```
 
-5. Combine multiple options:
+5. Run script with arguments:
 ```bash
-runit --platform-version python:3.11-slim --ports 3000 --ports 8000 script.py
+runit github-analyzer.py --arguments="kanthorlabs/runit"
+```
+
+6. Run script with arguments and parameters:
+```bash
+runit github-analyzer.py --arguments="kanthorlabs/runit" --params="--token=xxx"
+```
+
+7. Full example with all options:
+```bash
+runit github-analyzer.py \
+  --platform-version python:3.11-slim \
+  --ports 3000 \
+  --arguments="kanthorlabs/runit" \
+  --params="--token=xxx"
 ```
 
 ### Docker Images
