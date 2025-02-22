@@ -14,6 +14,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
@@ -48,7 +49,6 @@ func Exec(filepath string, vars *pythonx.DockerfileVars) error {
 		return err
 	}
 
-	// Create a Docker client
 	cli, err := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithAPIVersionNegotiation(),
@@ -62,15 +62,22 @@ func Exec(filepath string, vars *pythonx.DockerfileVars) error {
 		return err
 	}
 
-	if err := BuildImage(cli, buf, name); err != nil {
+	imageName := fmt.Sprintf("kanthorlab/runit-python:%s", name)
+	if err := BuildImage(cli, buf, imageName); err != nil {
 		return err
 	}
+
+	defer func() {
+		removeErr := RemoveImage(cli, imageName)
+		if removeErr != nil {
+			log.Printf("Warning: Failed to remove image %s: %v", imageName, removeErr)
+		}
+	}()
 
 	return RunContainer(cli, name, vars)
 }
 
 func BuildLockfile(tw *tar.Writer, file *os.File) error {
-	// Reset the file pointer
 	if _, err := file.Seek(0, 0); err != nil {
 		return err
 	}
@@ -100,7 +107,6 @@ func BuildLockfile(tw *tar.Writer, file *os.File) error {
 }
 
 func BuildApplication(tw *tar.Writer, file *os.File) error {
-	// Reset the file pointer
 	if _, err := file.Seek(0, 0); err != nil {
 		return err
 	}
@@ -152,24 +158,20 @@ func BuildDockerfile(tw *tar.Writer, vars *pythonx.DockerfileVars) error {
 }
 
 func BuildName(filepath string, vars *pythonx.DockerfileVars, file *os.File) (string, error) {
-	// Reset the file pointer
 	if _, err := file.Seek(0, 0); err != nil {
 		return "", err
 	}
 
 	hash := sha256.New()
 
-	// Write filepath to hash
 	if _, err := hash.Write([]byte(filepath)); err != nil {
 		return "", err
 	}
 
-	// Write file content to hash
 	if _, err := io.Copy(hash, file); err != nil {
 		return "", err
 	}
 
-	// Write vars to hash
 	varsString := fmt.Sprintf("%s-%s-%s-%s",
 		vars.Version,
 		vars.Arguments,
@@ -185,10 +187,10 @@ func BuildName(filepath string, vars *pythonx.DockerfileVars, file *os.File) (st
 	return name, nil
 }
 
-func BuildImage(cli *client.Client, buf *bytes.Buffer, name string) error {
+func BuildImage(cli *client.Client, buf *bytes.Buffer, imageName string) error {
 	ctx := context.Background()
 	buildops := types.ImageBuildOptions{
-		Tags:       []string{fmt.Sprintf("kanthorlab/runit-python:%s", name)},
+		Tags:       []string{imageName},
 		Dockerfile: "Dockerfile",
 		Remove:     true,
 	}
@@ -206,11 +208,19 @@ func BuildImage(cli *client.Client, buf *bytes.Buffer, name string) error {
 	return nil
 }
 
+func RemoveImage(cli *client.Client, imageName string) error {
+	ctx := context.Background()
+	_, err := cli.ImageRemove(ctx, imageName, image.RemoveOptions{
+		Force:         true,
+		PruneChildren: true,
+	})
+	return err
+}
+
 func RunContainer(cli *client.Client, name string, vars *pythonx.DockerfileVars) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
 	defer cancel()
 
-	// Build command array
 	cmd := []string{"python", "main.py"}
 	if vars.Arguments != "" {
 		cmd = append(cmd, vars.Arguments)

@@ -16,7 +16,6 @@ type DockerfileVars struct {
 	Ports     []string
 	Arguments string
 	Params    string
-	// Add any future container configuration here
 }
 
 func NewDockerfileVars() *DockerfileVars {

@@ -61,7 +61,6 @@ func main() {
 		},
 	}
 
-	// Add flags
 	cmd.Flags().String("platform-version", pythonx.DefaultPythonVersion, "Python version to use (e.g. python:3.13-slim)")
 	cmd.Flags().StringSlice("ports", []string{}, "Ports to expose (can be specified multiple times)")
 	cmd.Flags().String("arguments", "", "Main script arguments (e.g. --arguments=\"kanthorlabs/runit\")")
