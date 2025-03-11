@@ -73,10 +73,10 @@ runit examples/python/github-analyzer.py \
   --params="--token=xxx"
 
 # Machine learning script with specific Python version
-runit ml-model.py \
+runit examples/python/analyze-image.py \
   --platform-version python:3.11-slim \
-  --arguments="--model=gpt2" \
-  --params="--batch-size=32"
+  --arguments="https://i.ibb.co/KxcPH8LF/Screenshot-2025-03-11-at-11-09-33.png" \
+  --params="--api-key=sk-proj-xxx"
 ```
 
 ## 🏗️ Architecture
