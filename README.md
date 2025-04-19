@@ -1,5 +1,3 @@
-<div align="center">
-
 # 🚀 runit
 
 Run Python scripts instantly in containers - no setup, no fuss, just run it.
@@ -82,27 +80,38 @@ runit examples/python/analyze-image.py \
 ## 🏗️ Architecture
 
 ```mermaid
-flowchart TB;
-  client --> source
+flowchart TD;
+    User -->|runit script.py [flags]| CLI[runit CLI]
 
-  source --> files;
-  files --> tarball_builder;
-  files --> dockerfile_builder;
+    subgraph "Analysis & Packaging"
+        direction TB
+        CLI -->|Reads| Script[Script File]
+        Script -->|Scans imports| Scanner[pythonx.Scan]
+        Scanner -->|Generates| Lockfile[requirements.txt]
+        CLI -->|Uses flags & template| DockerfileGen[pythonx.Dockerfile]
+        DockerfileGen -->|Generates| DockerfileContent[Dockerfile]
+        Script --> TarBuilder[Tarball Builder]
+        Lockfile --> TarBuilder
+        DockerfileContent --> TarBuilder
+        TarBuilder --> Tarball[Context Tarball]
+    end
 
-  subgraph dockerfile_builder
-  direction TB
-  pkg_scanner --> pkg_lockfile_generator;
-  end
+    subgraph "Docker Operations"
+        direction TB
+        CLI --> DockerClient[Docker Client]
+        Tarball -->|Builds Image| BuildImage[dockerx.BuildImage]
+        DockerClient --> BuildImage
+        BuildImage --> Image[Docker Image]
+        Image -->|Runs Container| RunContainer[dockerx.RunContainer]
+        DockerClient --> RunContainer
+        RunContainer --> Container[Docker Container]
+        Container -->|Streams Logs| Output[STDOUT/STDERR]
+        Container -->|Cleanup| RemoveImage[dockerx.RemoveImage]
+        DockerClient --> RemoveImage
+    end
 
-  dockerfile_builder --> tarball_builder;
-
-  source --> directory;
-  directory --> tarball_builder;
-
-  tarball_builder --> docker_image;
-  docker_image --> docker_container;
-  docker_container --> output;
-  docker_container --> cleanup;
+    Analysis & Packaging --> Docker Operations
+    Docker Operations --> Output
 ```
 
 ## 🧩 How It Works
