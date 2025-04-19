@@ -81,37 +81,26 @@ runit examples/python/analyze-image.py \
 
 ```mermaid
 flowchart TD;
-    User -->|runit script.py [flags]| CLI[runit CLI]
+    User -- "runit script.py [flags]" --> CLI[runit CLI]
 
-    subgraph "Analysis & Packaging"
+    subgraph AP [Analysis & Packaging]
         direction TB
         CLI -->|Reads| Script[Script File]
-        Script -->|Scans imports| Scanner[pythonx.Scan]
-        Scanner -->|Generates| Lockfile[requirements.txt]
-        CLI -->|Uses flags & template| DockerfileGen[pythonx.Dockerfile]
-        DockerfileGen -->|Generates| DockerfileContent[Dockerfile]
-        Script --> TarBuilder[Tarball Builder]
-        Lockfile --> TarBuilder
-        DockerfileContent --> TarBuilder
-        TarBuilder --> Tarball[Context Tarball]
+        Script -->|Analyzes Dependencies| Lockfile(requirements.txt)
+        CLI -->|Generates| Dockerfile(Dockerfile)
+        Script & Lockfile & Dockerfile --> Ctx[Build Context]
     end
 
-    subgraph "Docker Operations"
+    subgraph DO [Docker Operations]
         direction TB
-        CLI --> DockerClient[Docker Client]
-        Tarball -->|Builds Image| BuildImage[dockerx.BuildImage]
-        DockerClient --> BuildImage
-        BuildImage --> Image[Docker Image]
-        Image -->|Runs Container| RunContainer[dockerx.RunContainer]
-        DockerClient --> RunContainer
-        RunContainer --> Container[Docker Container]
+        Ctx -->|Builds Image| Image[Docker Image]
+        Image -->|Runs Container| Container[Docker Container]
         Container -->|Streams Logs| Output[STDOUT/STDERR]
-        Container -->|Cleanup| RemoveImage[dockerx.RemoveImage]
-        DockerClient --> RemoveImage
+        Container -->|Cleanup| Removed[Container Removed]
     end
 
-    Analysis & Packaging --> Docker Operations
-    Docker Operations --> Output
+    AP --> DO
+    DO --> Output
 ```
 
 ## 🧩 How It Works
