@@ -1,0 +1,72 @@
+name: Release Go Binary
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Trigger on version tags like v1.0.0
+
+permissions:
+  contents: write # Allow creating releases and uploading assets
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22' # Specify your Go version
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Build binaries
+        run: |
+          # Define build targets (OS/Architecture)
+          targets=(
+            "linux/amd64"
+            "darwin/amd64"
+            "darwin/arm64"
+            "windows/amd64"
+          )
+
+          # Build for each target
+          for target in "${targets[@]}"; do
+            os="${target%/*}"
+            arch="${target#*/}"
+            output_name="runit-${os}-${arch}"
+            if [ "$os" = "windows" ]; then
+              output_name+=".exe"
+            fi
+            echo "Building for $os/$arch..."
+            GOOS=$os GOARCH=$arch go build -ldflags="-s -w -X main.version=${{ env.VERSION }}" -o "dist/${output_name}" ./cmd/runit
+          done
+        working-directory: ${{ github.workspace }} # Ensure build runs from the root
+
+      - name: Archive binaries
+        run: |
+          cd dist
+          for file in runit-*; do
+            if [[ "$file" == *.exe ]]; then
+              zip "${file%.exe}.zip" "$file"
+            else
+              tar czvf "${file}.tar.gz" "$file"
+            fi
+          done
+          cd ..
+        working-directory: ${{ github.workspace }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.tar.gz, dist/*.zip
+          tag_name: ${{ github.ref }}
+          name: Release ${{ env.VERSION }}
+          body: "Release version ${{ env.VERSION }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true # Optional: Auto-generate release notes
