@@ -61,6 +61,8 @@ runit [flags] <script>
 
 ### 🎭 Advanced Examples
 
+> **Note:** You can find the source code for these examples in the [examples/python](examples/python) directory.
+
 ```bash
 # Web application with multiple ports
 runit webapp.py --ports 8080 --ports 9090
