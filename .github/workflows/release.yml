@@ -3,10 +3,10 @@ name: Release Go Binary
 on:
   push:
     tags:
-      - 'v*.*.*' # Trigger on version tags like v1.0.0
+      - 'v*.*.*'
 
 permissions:
-  contents: write # Allow creating releases and uploading assets
+  contents: write
 
 jobs:
   release:
@@ -18,7 +18,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22' # Specify your Go version
+          go-version: '1.22'
 
       - name: Get version from tag
         id: get_version
@@ -43,9 +43,9 @@ jobs:
               output_name+=".exe"
             fi
             echo "Building for $os/$arch..."
-            GOOS=$os GOARCH=$arch go build -ldflags="-s -w -X main.version=${{ env.VERSION }}" -o "dist/${output_name}" ./cmd/runit
+            GOOS=$os GOARCH=$arch go build -ldflags="-s -w -X main.version=v25.4.19" -o "../../dist/${output_name}" .
           done
-        working-directory: ${{ github.workspace }} # Ensure build runs from the root
+        working-directory: "${{ github.workspace }}/cmd/runit"
 
       - name: Archive binaries
         run: |
@@ -69,4 +69,4 @@ jobs:
           body: "Release version ${{ env.VERSION }}"
           draft: false
           prerelease: false
-          generate_release_notes: true # Optional: Auto-generate release notes
+          generate_release_notes: true
