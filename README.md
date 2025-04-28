@@ -20,6 +20,12 @@ Run Python scripts instantly in containers - no setup, no fuss, just run it.
 
 ## 🚀 Quick Start
 
+### Requirements
+
+- **Docker**: Container runtime (version 20.10 or higher recommended)
+- **Go**: Required for installation from source (version 1.19 or higher)
+- **Internet connection**: For pulling Docker images and installing dependencies
+
 ### Installation
 
 ```bash
